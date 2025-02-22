@@ -13,8 +13,6 @@ const map = new mapboxgl.Map({
 
 map.on('load', () => { 
     //code 
-  });
-
   map.addSource('boston_route', {
     type: 'geojson',
     data: 'https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson?...'
@@ -46,3 +44,4 @@ map.on('load', () => {
       'line-opacity': 0.6
     }
   });
+});
