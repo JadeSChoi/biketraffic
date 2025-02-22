@@ -120,6 +120,15 @@ map.on('load', () => {
         svg.selectAll('circle')
             .transition().duration(500)
             .attr("r", d => radiusScale(d.totalTraffic));
+        
+        const circles = svg.selectAll('circle')
+
+        .each(function(d) {
+             // Add <title> for browser tooltips
+            d3.select(this)
+            .append('title')
+            .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+        });
 
     }).catch(error => {
         console.error('❌ Error loading traffic CSV:', error);  
