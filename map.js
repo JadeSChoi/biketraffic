@@ -44,4 +44,5 @@ map.on('style.load', () => {
       'line-opacity': 0.6
     }
   });
+  console.log("✅ Cambridge bike lanes added!");
 });
