@@ -30,3 +30,41 @@ body {
     color: gray;
     font-style: italic;
   }
+
+
+  :root {
+    --color-departures: steelblue;
+    --color-arrivals: darkorange;
+  }
+  
+  /* Apply color-mix based on departure ratio */
+  circle {
+    --color: color-mix(
+      in oklch,
+      var(--color-departures) calc(100% * var(--departure-ratio)),
+      var(--color-arrivals)
+    );
+    fill: var(--color);
+  }
+
+  .legend {
+    display: flex;
+    gap: 1px;
+    margin-top: 10px;
+  }
+  
+  .legend > div {
+    flex: 1;
+    text-align: center;
+    padding: 5px 20px; /* More horizontal padding */
+    color: white;
+    font-size: 14px;
+    
+    --color: color-mix(
+      in oklch,
+      var(--color-departures) calc(100% * var(--departure-ratio)),
+      var(--color-arrivals)
+    );
+  
+    background: var(--color);
+  }
