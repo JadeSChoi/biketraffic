@@ -10,6 +10,9 @@ const map = new mapboxgl.Map({
   maxZoom: 18
 });
 
+let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
+
+
 // Select the SVG layer
 const svg = d3.select('#map').append('svg');
 let stations = [];  
@@ -91,6 +94,7 @@ function updateCircles() {
     // Update existing circles
     svg.selectAll('circle')
         .data(filteredStations)
+        .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic))
         .transition().duration(500)
         .attr("r", d => radiusScale(d.totalTraffic));
 
