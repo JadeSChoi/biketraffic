@@ -1,108 +1,156 @@
-// Set your Mapbox access token here
 mapboxgl.accessToken = 'pk.eyJ1IjoiamFkZWNob2k3MjciLCJhIjoiY203Zm5haG92MDI3cjJycHJrNjJkdHllMCJ9.vZpXYB_tLFx-rwdFzFPydw';
 
 // Initialize the map
 const map = new mapboxgl.Map({
-  container: 'map', // ID of the div where the map will render
-  style: 'mapbox://styles/mapbox/streets-v12', // Map style
-  center: [-71.09415, 42.36027], // [longitude, latitude]
-  zoom: 12, // Initial zoom level
-  minZoom: 5, // Minimum allowed zoom
-  maxZoom: 18 // Maximum allowed zoom
+  container: 'map',
+  style: 'mapbox://styles/mapbox/streets-v12',
+  center: [-71.09415, 42.36027], 
+  zoom: 12,
+  minZoom: 5,
+  maxZoom: 18
 });
 
+// Select the SVG layer
 const svg = d3.select('#map').append('svg');
-let stations = [];  // Initialize an empty array to store station data
+let stations = [];  
+let trips = [];
 let timeFilter = -1;  
 
+// Select slider elements
 const timeSlider = document.getElementById('time-slider');
 const selectedTime = document.getElementById('selected-time');
 const anyTimeLabel = document.getElementById('any-time');
 
+// ✅ Helper function to format minutes to HH:MM AM/PM
 function formatTime(minutes) {
-    const date = new Date(0, 0, 0, 0, minutes);  // Set hours & minutes
-    return date.toLocaleString('en-US', { timeStyle: 'short' }); // Format as HH:MM AM/PM
-  }
-
-function updateTimeDisplay() {
-timeFilter = Number(timeSlider.value);  // Get slider value
-  
-if (timeFilter === -1) {
-    selectedTime.textContent = '';  // Clear time display
-    anyTimeLabel.style.display = 'block';  // Show "(any time)"
-} else {
-    selectedTime.textContent = formatTime(timeFilter);  // Display formatted time
-    anyTimeLabel.style.display = 'none';  // Hide "(any time)"
+    const date = new Date(0, 0, 0, 0, minutes);
+    return date.toLocaleString('en-US', { timeStyle: 'short' });
 }
 
+// ✅ Update displayed time when slider moves
+function updateTimeDisplay() {
+    timeFilter = Number(timeSlider.value);
+
+    if (timeFilter === -1) {
+        selectedTime.textContent = '';  
+        anyTimeLabel.style.display = 'block';  
+    } else {
+        selectedTime.textContent = formatTime(timeFilter);
+        anyTimeLabel.style.display = 'none';
+    }
+
+    // Trigger filtering logic
+    filterTripsByTime();
+}
+
+// ✅ Listen for slider input events
 timeSlider.addEventListener('input', updateTimeDisplay);
 
-updateTimeDisplay();
+// ✅ Function to convert Date to minutes since midnight
+function minutesSinceMidnight(date) {
+    return date.getHours() * 60 + date.getMinutes();
+}
 
-  
-    // Trigger filtering logic which will be implemented in the next step
-  }
+// ✅ Function to filter trips by selected time
+function filterTripsByTime() {
+    // If no filtering, use all trips
+    filteredTrips = timeFilter === -1 ? trips : trips.filter(trip => {
+        const startedMinutes = minutesSinceMidnight(trip.started_at);
+        const endedMinutes = minutesSinceMidnight(trip.ended_at);
+        return (
+            Math.abs(startedMinutes - timeFilter) <= 60 ||
+            Math.abs(endedMinutes - timeFilter) <= 60
+        );
+    });
 
+    // ✅ Update filtered arrivals and departures
+    const filteredArrivals = d3.rollup(filteredTrips, v => v.length, d => d.end_station_id);
+    const filteredDepartures = d3.rollup(filteredTrips, v => v.length, d => d.start_station_id);
+
+    // ✅ Update filtered station data
+    filteredStations = stations.map(station => {
+        let id = station.short_name;
+        return {
+            ...station,
+            arrivals: filteredArrivals.get(id) ?? 0,
+            departures: filteredDepartures.get(id) ?? 0,
+            totalTraffic: (filteredArrivals.get(id) ?? 0) + (filteredDepartures.get(id) ?? 0)
+        };
+    });
+
+    // ✅ Update circles based on filtered data
+    updateCircles();
+}
+
+// ✅ Function to update station circles
+function updateCircles() {
+    const radiusScale = d3.scaleSqrt()
+        .domain([0, d3.max(filteredStations, d => d.totalTraffic)])
+        .range(timeFilter === -1 ? [0, 25] : [3, 50]);  // Increase size when filtering
+
+    // Update existing circles
+    svg.selectAll('circle')
+        .data(filteredStations)
+        .transition().duration(500)
+        .attr("r", d => radiusScale(d.totalTraffic));
+
+    // Update tooltips
+    svg.selectAll('circle')
+        .each(function(d) {
+            d3.select(this)
+                .select('title')
+                .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+        });
+}
+
+// ✅ Load map layers
 map.on('style.load', () => { 
-    //code 
+    map.addSource('boston_route', {
+        type: 'geojson',
+        data: 'https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson?...'
+    });
 
-  map.addSource('boston_route', {
-    type: 'geojson',
-    data: 'https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson?...'
-  });
-  
-  map.addLayer({
-    id: 'bike-lanes',
-    type: 'line',
-    source: 'boston_route',
-    paint: {
-      'line-color': 'green',
-      'line-width': 3,
-      'line-opacity': 0.4
-    }
-  });
-  
+    map.addLayer({
+        id: 'bike-lanes',
+        type: 'line',
+        source: 'boston_route',
+        paint: { 'line-color': 'green', 'line-width': 3, 'line-opacity': 0.4 }
+    });
 
-  map.addSource('cambridge_bike_lanes', {
-    type: 'geojson',
-    data: 'https://data.cambridgema.gov/api/geospatial/gb5w-yva3?method=export&format=GeoJSON'
-  });
+    map.addSource('cambridge_bike_lanes', {
+        type: 'geojson',
+        data: 'https://data.cambridgema.gov/api/geospatial/gb5w-yva3?method=export&format=GeoJSON'
+    });
 
-  map.addLayer({
-    id: 'bike-lanes-cambridge',
-    type: 'line',
-    source: 'cambridge_bike_lanes',
-    paint: {
-      'line-color': 'blue', 
-      'line-width': 3,
-      'line-opacity': 0.6
-    }
-  });
-  console.log("✅ Cambridge bike lanes added!");
+    map.addLayer({
+        id: 'bike-lanes-cambridge',
+        type: 'line',
+        source: 'cambridge_bike_lanes',
+        paint: { 'line-color': 'blue', 'line-width': 3, 'line-opacity': 0.6 }
+    });
+
+    console.log("✅ Cambridge bike lanes added!");
 });
 
+// ✅ Load station and trip data
 map.on('load', () => {
-    // Load the nested JSON file
     const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json";
     const trafficUrl = "https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv";
 
+    // Fetch stations
     d3.json(jsonurl).then(jsonData => {
-        console.log('✅ Loaded JSON Data:', jsonData);
         stations = jsonData.data.stations;
-        console.log('✅ Stations Array:', stations);
+        console.log('✅ Stations Loaded:', stations);
 
-        // ✅ Draw initial station circles
         const circles = svg.selectAll('circle')
             .data(stations)
             .enter()
             .append('circle')
-            .attr('r', 5)               // Default size before traffic data
-            .attr('fill', 'steelblue')  // Color
-            .attr('stroke', 'white')    // Border color
-            .attr('stroke-width', 1)    // Border thickness
-            .attr('opacity', 0.8);      // Transparency
-
-        console.log("✅ Bike station circles added!");
+            .attr('r', 5)
+            .attr('fill', 'steelblue')
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1)
+            .attr('opacity', 0.8);
 
         function updatePositions() {
             circles
@@ -110,60 +158,28 @@ map.on('load', () => {
                 .attr('cy', d => getCoords(d).cy);
         }
 
-        // Initial position update when map loads
         updatePositions();
-
-        // Attach event listeners to dynamically update positions
         map.on('move', updatePositions);
         map.on('zoom', updatePositions);
         map.on('resize', updatePositions);
         map.on('moveend', updatePositions);
 
-        // ✅ Now fetch traffic data
+        // Fetch traffic data
         return d3.csv(trafficUrl);
+    }).then(loadedTrips => {
+        trips = loadedTrips.map(trip => ({
+            ...trip,
+            started_at: new Date(trip.started_at),
+            ended_at: new Date(trip.ended_at)
+        }));
 
-    }).then(trips => {
-        console.log("✅ Loaded Traffic Data:", trips.slice(0, 5));
+        console.log("✅ Trips Loaded:", trips.slice(0, 5));
+        filterTripsByTime();  // Initialize filtering
 
-        // ✅ Compute traffic metrics for each station
-        const departures = d3.rollup(trips, v => v.length, d => d.start_station_id);
-        const arrivals = d3.rollup(trips, v => v.length, d => d.end_station_id);
+    }).catch(error => console.error('❌ Error loading data:', error));
+});
 
-        stations = stations.map(station => {
-            let id = station.short_name;
-            station.departures = departures.get(id) ?? 0;
-            station.arrivals = arrivals.get(id) ?? 0;
-            station.totalTraffic = station.departures + station.arrivals;
-            return station;
-        });
-
-        console.log("✅ Updated Station Traffic Data:", stations.slice(0, 5));
-
-        // ✅ Define the radius scale
-        const radiusScale = d3
-            .scaleSqrt()
-            .domain([0, d3.max(stations, d => d.totalTraffic)])
-            .range([0, 25]);
-
-        // ✅ Resize circles based on traffic
-        svg.selectAll('circle')
-            .transition().duration(500)
-            .attr("r", d => radiusScale(d.totalTraffic));
-        
-        svg.selectAll('circle')
-        .each(function(d) {
-            d3.select(this)
-            .append('title')
-            .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
-        });
-
-    }).catch(error => {
-        console.error('❌ Error loading traffic CSV:', error);  
-    });  // ✅ CLOSES .then(trips => {...})
-
-}); // ✅ Closes map.on('load', () => {...})
-
-// ✅ Function to convert longitude/latitude to map coordinates
+// ✅ Convert lon/lat to pixel coordinates
 function getCoords(station) {
     const point = new mapboxgl.LngLat(+station.lon, +station.lat);
     const { x, y } = map.project(point);
