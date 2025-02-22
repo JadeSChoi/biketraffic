@@ -11,6 +11,9 @@ const map = new mapboxgl.Map({
   maxZoom: 18 // Maximum allowed zoom
 });
 
+const svg = d3.select('#map').select('svg');
+let stations = [];
+
 map.on('style.load', () => { 
     //code 
 
@@ -54,10 +57,10 @@ map.on('load', () => {
     d3.json(jsonurl).then(jsonData => {
       console.log('Loaded JSON Data:', jsonData);  // Log to verify structure
       const stations = jsonData.data.stations;
+
       console.log('✅ Stations Array:', stations);
 
-      const svg = d3.select('#map').select('svg');
-      let stations = [];
+
       const circles = svg.selectAll('circle')
       .data(stations)
       .enter()
@@ -81,8 +84,6 @@ map.on('load', () => {
   });
 
 
-const svg = d3.select('#map').select('svg');
-let stations = [];
 
 function getCoords(station) {
     const point = new mapboxgl.LngLat(+station.lon, +station.lat);  // Convert lon/lat to Mapbox LngLat
