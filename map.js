@@ -1,4 +1,3 @@
-// Set your Mapbox access token here
 mapboxgl.accessToken = 'pk.eyJ1IjoiamFkZWNob2k3MjciLCJhIjoiY203Zm5haG92MDI3cjJycHJrNjJkdHllMCJ9.vZpXYB_tLFx-rwdFzFPydw';
 
 // Initialize the map
@@ -11,17 +10,18 @@ const map = new mapboxgl.Map({
   maxZoom: 18 // Maximum allowed zoom
 });
 
+// ✅ Select the SVG element and initialize stations array BEFORE fetching data
 const svg = d3.select('#map').select('svg');
-let stations = [];
+let stations = []; // This will be updated once data is fetched
 
 map.on('style.load', () => { 
-    //code 
+  console.log("✅ Map style loaded!");
 
   map.addSource('boston_route', {
     type: 'geojson',
-    data: 'https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson?...'
+    data: 'https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson'
   });
-  
+
   map.addLayer({
     id: 'bike-lanes',
     type: 'line',
@@ -48,52 +48,60 @@ map.on('style.load', () => {
       'line-opacity': 0.6
     }
   });
+
   console.log("✅ Cambridge bike lanes added!");
 });
 
 map.on('load', () => {
-    // Load the nested JSON file
-    const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json"
-    d3.json(jsonurl).then(jsonData => {
-      console.log('Loaded JSON Data:', jsonData);  // Log to verify structure
-      const stations = jsonData.data.stations;
+  console.log("✅ Map fully loaded!");
 
-      console.log('✅ Stations Array:', stations);
+  const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json";
+  
+  d3.json(jsonurl)
+    .then(jsonData => {
+      console.log('✅ Loaded JSON Data:', jsonData);
 
+      // ✅ Update the global `stations` variable with fetched data
+      stations = jsonData.data.stations;
+      console.log('✅ Stations Array:', stations.slice(0, 5)); // Debugging
 
+      // ✅ Append circles for each station
       const circles = svg.selectAll('circle')
-      .data(stations)
-      .enter()
-      .append('circle')
-      .attr('r', 5)               // Radius of the circle
-      .attr('fill', 'steelblue')  // Circle fill color
-      .attr('stroke', 'white')    // Circle border color
-      .attr('stroke-width', 1)    // Circle border thickness
-      .attr('opacity', 0.8); 
+        .data(stations)
+        .enter()
+        .append('circle')
+        .attr('r', 5)               // Radius of the circle
+        .attr('fill', 'steelblue')  // Circle fill color
+        .attr('stroke', 'white')    // Circle border color
+        .attr('stroke-width', 1)    // Circle border thickness
+        .attr('opacity', 0.8);
 
+      console.log("✅ Bike station circles added!");
+
+      // ✅ Initial positioning of circles
       updatePositions(circles);
 
-      map.on('move', updatePositions);     // Update during map movement
-      map.on('zoom', updatePositions);     // Update during zooming
-      map.on('resize', updatePositions);   // Update on window resize
-      map.on('moveend', updatePositions);  // Final adjustment after movement ends
-
-    }).catch(error => {
-      console.error('Error loading JSON:', error);  // Handle errors if JSON loading fails
+      // ✅ Update positions when the map moves/zooms
+      map.on('move', () => updatePositions(circles));
+      map.on('zoom', () => updatePositions(circles));
+      map.on('resize', () => updatePositions(circles));
+      map.on('moveend', () => updatePositions(circles));
+    })
+    .catch(error => {
+      console.error('❌ Error loading JSON:', error);
     });
-  });
+});
 
-
-
+// ✅ Function to convert lat/lon to screen coordinates
 function getCoords(station) {
-    const point = new mapboxgl.LngLat(+station.lon, +station.lat);  // Convert lon/lat to Mapbox LngLat
-    const { x, y } = map.project(point);  // Project to pixel coordinates
-    return { cx: x, cy: y };  // Return as object for use in SVG attributes
-  }
+  const point = new mapboxgl.LngLat(+station.lon, +station.lat);
+  const { x, y } = map.project(point);
+  return { cx: x, cy: y };
+}
 
-function updatePositions() {
-    circles
-      .attr('cx', d => getCoords(d).cx)  // Set the x-position using projected coordinates
-      .attr('cy', d => getCoords(d).cy); // Set the y-position using projected coordinates
-  }
-
+// ✅ Function to update circle positions dynamically
+function updatePositions(circles) {
+  circles
+    .attr("cx", d => getCoords(d).cx)  
+    .attr("cy", d => getCoords(d).cy);
+}
