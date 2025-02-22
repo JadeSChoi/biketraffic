@@ -69,7 +69,17 @@ map.on('load', () => {
         .attr('stroke-width', 1)    // Border thickness
         .attr('opacity', 0.8);      // Transparency
     console.log("✅ Bike station circles added!");
+
+    function updatePositions() {
+        circles
+          .attr('cx', d => getCoords(d).cx)  // Set the x-position using projected coordinates
+          .attr('cy', d => getCoords(d).cy); // Set the y-position using projected coordinates
+      }
     
+      // Initial position update when map loads
+      updatePositions();
+    
+
     map.on('move', updatePositions);     // Update during map movement
     map.on('zoom', updatePositions);     // Update during zooming
     map.on('resize', updatePositions);   // Update on window resize
@@ -88,12 +98,3 @@ map.on('load', () => {
     return { cx: x, cy: y };  // Return as object for use in SVG attributes
   }
   
-// Function to update circle positions when the map moves/zooms
-function updatePositions() {
-    circles
-      .attr('cx', d => getCoords(d).cx)  // Set the x-position using projected coordinates
-      .attr('cy', d => getCoords(d).cy); // Set the y-position using projected coordinates
-  }
-
-  // Initial position update when map loads
-  updatePositions();
