@@ -25,7 +25,3 @@ html, body {
     pointer-events: none;
   }
   
-  #map svg {
-    background: yellow !important; /* Force yellow */
-    opacity: 0.5 !important; /* Ensure visibility */
-  }
