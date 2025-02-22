@@ -13,6 +13,7 @@ const map = new mapboxgl.Map({
 
 map.on('style.load', () => { 
     //code 
+
   map.addSource('boston_route', {
     type: 'geojson',
     data: 'https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson?...'
@@ -46,3 +47,15 @@ map.on('style.load', () => {
   });
   console.log("✅ Cambridge bike lanes added!");
 });
+
+map.on('load', () => {
+    // Load the nested JSON file
+    const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json"
+    d3.json(jsonurl).then(jsonData => {
+      console.log('Loaded JSON Data:', jsonData);  // Log to verify structure
+      const stations = jsonData.data.stations;
+      console.log('✅ Stations Array:', stations);
+    }).catch(error => {
+      console.error('Error loading JSON:', error);  // Handle errors if JSON loading fails
+    });
+  });
