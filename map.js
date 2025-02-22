@@ -76,6 +76,13 @@ map.on('load', () => {
     map.on('resize', updatePositions);   // Update on window resize
     map.on('moveend', updatePositions);  // Final adjustment after movement ends
 
+    function updatePositions() {
+        circles
+          .attr("cx", d => getCoords(d).cx)  
+          .attr("cy", d => getCoords(d).cy);
+      }
+      
+
     }).catch(error => {
       console.error('Error loading JSON:', error);  // Handle errors if JSON loading fails
     });
@@ -88,9 +95,3 @@ map.on('load', () => {
     return { cx: x, cy: y };  // Return as object for use in SVG attributes
   }
 
-  function updatePositions() {
-    circles
-      .attr("cx", d => getCoords(d).cx)  
-      .attr("cy", d => getCoords(d).cy);
-  }
-  
