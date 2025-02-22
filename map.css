@@ -24,3 +24,10 @@ html, body {
     z-index: 1;
     pointer-events: none;
   }
+
+  circle {
+    fill-opacity: 0.6;  /* Make circles slightly transparent */
+    stroke: white;      /* Add a white outline */
+    stroke-width: 1;    /* Outline thickness */
+    pointer-events: auto; /* Allow hovering for tooltips */
+}
