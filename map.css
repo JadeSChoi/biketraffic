@@ -14,3 +14,16 @@ html, body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: subtle shadow for effect */
     border-radius: 8px; /* Optional: rounded corners */
   }
+
+  #map svg {
+    position: absolute; /* Ensures it's positioned on top of the map */
+    width: 100%; /* Makes it cover the entire map */
+    height: 100%;
+    z-index: 1; /* Ensures it appears above the map */
+    pointer-events: none; /* Allows user to interact with the map */
+  }
+  
+  #map svg {
+    background: yellow;
+    opacity: 50%;
+  }
