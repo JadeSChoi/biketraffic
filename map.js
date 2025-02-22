@@ -13,6 +13,35 @@ const map = new mapboxgl.Map({
 
 const svg = d3.select('#map').append('svg');
 let stations = [];  // Initialize an empty array to store station data
+let timeFilter = -1;  
+
+const timeSlider = document.getElementById('time-slider');
+const selectedTime = document.getElementById('selected-time');
+const anyTimeLabel = document.getElementById('any-time');
+
+function formatTime(minutes) {
+    const date = new Date(0, 0, 0, 0, minutes);  // Set hours & minutes
+    return date.toLocaleString('en-US', { timeStyle: 'short' }); // Format as HH:MM AM/PM
+  }
+
+function updateTimeDisplay() {
+timeFilter = Number(timeSlider.value);  // Get slider value
+  
+if (timeFilter === -1) {
+    selectedTime.textContent = '';  // Clear time display
+    anyTimeLabel.style.display = 'block';  // Show "(any time)"
+} else {
+    selectedTime.textContent = formatTime(timeFilter);  // Display formatted time
+    anyTimeLabel.style.display = 'none';  // Hide "(any time)"
+}
+
+timeSlider.addEventListener('input', updateTimeDisplay);
+
+updateTimeDisplay();
+
+  
+    // Trigger filtering logic which will be implemented in the next step
+  }
 
 map.on('style.load', () => { 
     //code 
