@@ -92,6 +92,7 @@ map.on('load', () => {
 
         // ✅ Now fetch traffic data
         return d3.csv(trafficUrl);
+
     }).then(trips => {
         console.log("✅ Loaded Traffic Data:", trips.slice(0, 5));
 
@@ -124,9 +125,7 @@ map.on('load', () => {
         console.error('❌ Error loading traffic CSV:', error);  
     });  // ✅ CLOSES .then(trips => {...})
 
-}).catch(error => {
-    console.error('❌ Error loading station JSON:', error);
-}); // ✅ CLOSES .then(jsonData => {...}) and map.on('load', () => {...})
+}); // ✅ Closes map.on('load', () => {...})
 
 // ✅ Function to convert longitude/latitude to map coordinates
 function getCoords(station) {
