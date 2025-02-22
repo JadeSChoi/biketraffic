@@ -9,3 +9,24 @@ body {
     padding: 1em;
   }
   
+  header {
+    display: flex;
+    gap: 1em;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  
+  label {
+    margin-left: auto;
+  }
+  
+  time {
+    display: block;
+    font-weight: bold;
+  }
+  
+  em {
+    display: block;
+    color: gray;
+    font-style: italic;
+  }
