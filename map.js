@@ -1,6 +1,5 @@
 mapboxgl.accessToken = 'pk.eyJ1IjoiamFkZWNob2k3MjciLCJhIjoiY203Zm5haG92MDI3cjJycHJrNjJkdHllMCJ9.vZpXYB_tLFx-rwdFzFPydw';
 
-// Initialize the map
 const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v12',
@@ -13,24 +12,21 @@ const map = new mapboxgl.Map({
 let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 
 
-// Select the SVG layer
 const svg = d3.select('#map').append('svg');
 let stations = [];  
 let trips = [];
 let timeFilter = -1;  
 
-// Select slider elements
 const timeSlider = document.getElementById('time-slider');
 const selectedTime = document.getElementById('selected-time');
 const anyTimeLabel = document.getElementById('any-time');
 
-// ✅ Helper function to format minutes to HH:MM AM/PM
+
 function formatTime(minutes) {
     const date = new Date(0, 0, 0, 0, minutes);
     return date.toLocaleString('en-US', { timeStyle: 'short' });
 }
 
-// ✅ Update displayed time when slider moves
 function updateTimeDisplay() {
     timeFilter = Number(timeSlider.value);
 
@@ -42,21 +38,16 @@ function updateTimeDisplay() {
         anyTimeLabel.style.display = 'none';
     }
 
-    // Trigger filtering logic
     filterTripsByTime();
 }
 
-// ✅ Listen for slider input events
 timeSlider.addEventListener('input', updateTimeDisplay);
 
-// ✅ Function to convert Date to minutes since midnight
 function minutesSinceMidnight(date) {
     return date.getHours() * 60 + date.getMinutes();
 }
 
-// ✅ Function to filter trips by selected time
 function filterTripsByTime() {
-    // If no filtering, use all trips
     filteredTrips = timeFilter === -1 ? trips : trips.filter(trip => {
         const startedMinutes = minutesSinceMidnight(trip.started_at);
         const endedMinutes = minutesSinceMidnight(trip.ended_at);
@@ -66,11 +57,9 @@ function filterTripsByTime() {
         );
     });
 
-    // ✅ Update filtered arrivals and departures
     const filteredArrivals = d3.rollup(filteredTrips, v => v.length, d => d.end_station_id);
     const filteredDepartures = d3.rollup(filteredTrips, v => v.length, d => d.start_station_id);
 
-    // ✅ Update filtered station data
     filteredStations = stations.map(station => {
         let id = station.short_name;
         return {
@@ -81,24 +70,21 @@ function filterTripsByTime() {
         };
     });
 
-    // ✅ Update circles based on filtered data
     updateCircles();
 }
 
-// ✅ Function to update station circles
+
 function updateCircles() {
     const radiusScale = d3.scaleSqrt()
         .domain([0, d3.max(filteredStations, d => d.totalTraffic)])
         .range(timeFilter === -1 ? [0, 25] : [3, 50]);  // Increase size when filtering
 
-    // Update existing circles
     svg.selectAll('circle')
         .data(filteredStations)
         .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic))
         .transition().duration(500)
         .attr("r", d => radiusScale(d.totalTraffic));
 
-    // Update tooltips
     svg.selectAll('circle')
         .each(function(d) {
             d3.select(this)
@@ -106,8 +92,6 @@ function updateCircles() {
                 .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
         });
 }
-
-// ✅ Load map layers
 map.on('style.load', () => { 
     map.addSource('boston_route', {
         type: 'geojson',
@@ -136,12 +120,10 @@ map.on('style.load', () => {
     console.log("✅ Cambridge bike lanes added!");
 });
 
-// ✅ Load station and trip data
 map.on('load', () => {
     const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json";
     const trafficUrl = "https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv";
 
-    // Fetch stations
     d3.json(jsonurl).then(jsonData => {
         stations = jsonData.data.stations;
         console.log('✅ Stations Loaded:', stations);
@@ -168,7 +150,6 @@ map.on('load', () => {
         map.on('resize', updatePositions);
         map.on('moveend', updatePositions);
 
-        // Fetch traffic data
         return d3.csv(trafficUrl);
     }).then(loadedTrips => {
         trips = loadedTrips.map(trip => ({
@@ -183,7 +164,6 @@ map.on('load', () => {
     }).catch(error => console.error('❌ Error loading data:', error));
 });
 
-// ✅ Convert lon/lat to pixel coordinates
 function getCoords(station) {
     const point = new mapboxgl.LngLat(+station.lon, +station.lat);
     const { x, y } = map.project(point);
