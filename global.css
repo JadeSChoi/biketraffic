@@ -68,3 +68,8 @@ body {
   
     background: var(--color);
   }
+
+  input[type="range"] {
+    width: 300px;  
+    max-width: 100%;  
+}
