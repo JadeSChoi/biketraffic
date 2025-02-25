@@ -31,3 +31,7 @@ html, body {
     stroke-width: 1;    
     pointer-events: auto; 
 }
+
+circle {
+  pointer-events: auto; /* Enables interaction with tooltips */
+}
