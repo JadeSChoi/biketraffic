@@ -75,9 +75,11 @@ function filterTripsByTime() {
 
 
 function updateCircles() {
-    const radiusScale = d3.scaleSqrt()
-        .domain([0, d3.max(filteredStations, d => d.totalTraffic)])
-        .range(timeFilter === -1 ? [0, 25] : [3, 50]);
+    const radiusScale = d3
+        .scaleSqrt()
+        .domain([0, d3.max(stations, (d) => d.totalTraffic)])
+        .range([0, 25]);
+  
 
     const circles = svg.selectAll('circle')
         .data(filteredStations, d => d.short_name); // Use key to track changes
