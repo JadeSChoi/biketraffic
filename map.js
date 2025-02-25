@@ -77,20 +77,21 @@ function filterTripsByTime() {
 function updateCircles() {
     const radiusScale = d3.scaleSqrt()
         .domain([0, d3.max(filteredStations, d => d.totalTraffic)])
-        .range(timeFilter === -1 ? [0, 25] : [3, 50]);  // Increase size when filtering
+        .range(timeFilter === -1 ? [0, 25] : [3, 50]);
 
-    svg.selectAll('circle')
-        .data(filteredStations)
-        .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic))
+    const circles = svg.selectAll('circle')
+        .data(filteredStations, d => d.short_name); // Use key to track changes
+
+    circles.join('circle') // Ensure correct D3 data binding
         .transition().duration(500)
-        .attr("r", d => radiusScale(d.totalTraffic));
+        .attr("r", d => radiusScale(d.totalTraffic))
+        .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic));
 
-    svg.selectAll('circle')
-        .each(function(d) {
-            d3.select(this)
-                .select('title')
-                .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
-        });
+    circles.each(function(d) {
+        d3.select(this)
+            .select('title')
+            .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+    });
 }
 map.on('style.load', () => { 
     map.addSource('boston_route', {
