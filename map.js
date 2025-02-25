@@ -136,7 +136,12 @@ map.on('load', () => {
             .attr('fill', 'steelblue')
             .attr('stroke', 'white')
             .attr('stroke-width', 1)
-            .attr('opacity', 0.8);
+            .attr('opacity', 0.8)
+            .each(function (d) {
+                d3.select(this)
+                    .append('title') // Tooltip
+                    .text(`${d.totalTraffic || 0} trips (${d.departures || 0} departures, ${d.arrivals || 0} arrivals)`);
+            });
 
         function updatePositions() {
             circles
