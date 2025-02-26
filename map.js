@@ -28,19 +28,18 @@ function formatTime(minutes) {
 }
 
 function updateTimeDisplay() {
-    let timeFilter = Number(timeSlider.value); // Get slider value
+    timeFilter = Number(timeSlider.value);  // ✅ Global update
 
     if (timeFilter === -1) {
-      selectedTime.textContent = ''; // Clear time display
-      anyTimeLabel.style.display = 'block'; // Show "(any time)"
+      selectedTime.textContent = '';  
+      anyTimeLabel.style.display = 'block';  
     } else {
-      selectedTime.textContent = formatTime(timeFilter); // Display formatted time
-      anyTimeLabel.style.display = 'none'; // Hide "(any time)"
+      selectedTime.textContent = formatTime(timeFilter);
+      anyTimeLabel.style.display = 'none';
     }
-    
-    // Call updateScatterPlot to reflect the changes on the map
-    updateScatterPlot(timeFilter);
+    updateScatterPlot(timeFilter);  // ✅ Updates visualization
 }
+
 
 
 timeSlider.addEventListener('input', updateTimeDisplay);
@@ -106,20 +105,24 @@ function updateCircles() {
         .scaleSqrt()
         .domain([0, d3.max(stations, (d) => d.totalTraffic)])
         .range([0, 25]);
-  
 
     const circles = svg.selectAll('circle')
-        .data(filteredStations, d => d.short_name); // Use key to track changes
+        .data(filteredStations, d => d.short_name);
 
-    circles.join('circle') // Ensure correct D3 data binding
+    circles.join('circle')
         .transition().duration(500)
         .attr("r", d => radiusScale(d.totalTraffic))
-        .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic));
+        .style("--departure-ratio", d => 
+            d.totalTraffic > 0 ? stationFlow(d.departures / d.totalTraffic) : 0.5 // Ensures no NaN values
+        );
 
     circles.each(function(d) {
-        d3.select(this)
-            .select('title')
-            .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+        let circle = d3.select(this);
+        let title = circle.select("title");
+        if (title.empty()) {
+            title = circle.append("title");
+        }
+        title.text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
     });
 }
 
@@ -196,6 +199,21 @@ map.on('load', () => {
 
         console.log("✅ Trips Loaded:", trips.slice(0, 5));
         filterTripsByTime();  // Initialize filtering
+
+        function updateScatterPlot(timeFilter) {
+            // Get only the trips that match the selected time filter
+            const filteredTrips = filterTripsbyTime(trips, timeFilter);
+            
+            // Recompute station traffic based on the filtered trips
+            const filteredStations = computeStationTraffic(stations, filteredTrips);
+            
+            // Update the scatterplot by adjusting the radius of circles
+            circles
+              .data(filteredStations , (d) => d.short_name)
+              .join('circle') // Ensure the data is bound correctly
+              .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+        }
+        updateScatterPlot(timeFilter);
 
     }).catch(error => console.error('❌ Error loading data:', error));
 });
