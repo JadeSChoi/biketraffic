@@ -47,7 +47,8 @@ function updateTimeDisplay() {
   }
   
   // Update the visualization (scatterplot) based on the selected time filter
-  updateScatterPlot(timeFilter);
+  if (updateScatterPlotFn) {
+    updateScatterPlotFn(timeFilter);
 }
 timeSlider.addEventListener('input', updateTimeDisplay);
 
