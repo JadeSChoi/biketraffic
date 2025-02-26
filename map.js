@@ -49,7 +49,9 @@ function updateTimeDisplay() {
   // Update the visualization (scatterplot) based on the selected time filter
   if (updateScatterPlotFn) {
     updateScatterPlotFn(timeFilter);
+  }
 }
+
 timeSlider.addEventListener('input', updateTimeDisplay);
 
 // Helper: Convert a Date object to minutes since midnight
