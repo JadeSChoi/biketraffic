@@ -37,7 +37,7 @@ function updateTimeDisplay() {
         anyTimeLabel.style.display = 'none';
     }
 
-    updateScatterPlot(timeFilter); // ✅ Ensures the scatterplot updates dynamically
+    updateScatterPlot(timeFilter); // ✅ Call updateScatterPlot
 }
 
 timeSlider.addEventListener('input', updateTimeDisplay);
@@ -149,19 +149,10 @@ map.on('load', () => {
 
             const circles = svg.selectAll('circle')
                 .data(filteredStations, (d) => d.short_name)
-                .join(
-                    enter => enter.append('circle')
-                        .attr('r', 0)
-                        .attr('fill', 'steelblue')
-                        .attr('stroke', 'white')
-                        .attr('stroke-width', 1)
-                        .attr('opacity', 0.8)
-                        .call(enter => enter.transition().duration(500)
-                            .attr('r', d => radiusScale(d.totalTraffic))),
-                    update => update.transition().duration(500)
-                        .attr('r', d => radiusScale(d.totalTraffic))
-                        .attr('fill', d => d.totalTraffic > 0 ? 'steelblue' : 'gray')
-                );
+                .join('circle')
+                .transition().duration(500)
+                .attr('r', (d) => radiusScale(d.totalTraffic))
+                .attr('fill', d => d.totalTraffic > 0 ? 'steelblue' : 'gray');
 
             circles.each(function(d) {
                 d3.select(this).select('title')
