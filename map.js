@@ -28,24 +28,51 @@ function formatTime(minutes) {
 }
 
 function updateTimeDisplay() {
-    timeFilter = Number(timeSlider.value);
+    let timeFilter = Number(timeSlider.value); // Get slider value
 
     if (timeFilter === -1) {
-        selectedTime.textContent = '';  
-        anyTimeLabel.style.display = 'block';  
+      selectedTime.textContent = ''; // Clear time display
+      anyTimeLabel.style.display = 'block'; // Show "(any time)"
     } else {
-        selectedTime.textContent = formatTime(timeFilter);
-        anyTimeLabel.style.display = 'none';
+      selectedTime.textContent = formatTime(timeFilter); // Display formatted time
+      anyTimeLabel.style.display = 'none'; // Hide "(any time)"
     }
-
-    filterTripsByTime();
+    
+    // Call updateScatterPlot to reflect the changes on the map
+    updateScatterPlot(timeFilter);
 }
+
 
 timeSlider.addEventListener('input', updateTimeDisplay);
 
 function minutesSinceMidnight(date) {
     return date.getHours() * 60 + date.getMinutes();
 }
+
+function computeStationTraffic(stations, trips) {
+    const departures = d3.rollup(
+        trips, 
+        (v) => v.length, 
+        (d) => d.start_station_id
+    );
+
+    const arrivals = d3.rollup(
+        trips, 
+        (v) => v.length, 
+        (d) => d.end_station_id
+    );
+
+    return stations.map((station) => {
+        let id = station.short_name;
+        return {
+            ...station,
+            arrivals: arrivals.get(id) ?? 0,  
+            departures: departures.get(id) ?? 0,  
+            totalTraffic: (arrivals.get(id) ?? 0) + (departures.get(id) ?? 0)  
+        };
+    });
+}
+
 
 function filterTripsByTime() {
     filteredTrips = timeFilter === -1 ? trips : trips.filter(trip => {
@@ -95,6 +122,7 @@ function updateCircles() {
             .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
     });
 }
+
 map.on('style.load', () => { 
     map.addSource('boston_route', {
         type: 'geojson',
@@ -128,11 +156,11 @@ map.on('load', () => {
     const trafficUrl = "https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv";
 
     d3.json(jsonurl).then(jsonData => {
-        stations = jsonData.data.stations;
+        stations = computeStationTraffic(jsonData.data.stations, trips);
         console.log('✅ Stations Loaded:', stations);
 
         const circles = svg.selectAll('circle')
-            .data(stations)
+            .data(stations, (d) => d.short_name)
             .enter()
             .append('circle')
             .attr('r', 5)
