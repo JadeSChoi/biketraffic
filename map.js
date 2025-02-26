@@ -1,5 +1,6 @@
 mapboxgl.accessToken = 'pk.eyJ1IjoiamFkZWNob2k3MjciLCJhIjoiY203Zm5haG92MDI3cjJycHJrNjJkdHllMCJ9.vZpXYB_tLFx-rwdFzFPydw';
 
+// Initialize the map
 const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v12',
@@ -21,13 +22,15 @@ const anyTimeLabel = document.getElementById('any-time');
 const radiusScale = d3.scaleSqrt().domain([0, 1]).range([0, 25]);
 let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 
+// ✅ Format time for display
 function formatTime(minutes) {
     const date = new Date(0, 0, 0, 0, minutes);
     return date.toLocaleString('en-US', { timeStyle: 'short' });
 }
 
+// ✅ Update time display and trigger filtering
 function updateTimeDisplay() {
-    timeFilter = Number(timeSlider.value); 
+    timeFilter = Number(timeSlider.value);
 
     if (timeFilter === -1) {
         selectedTime.textContent = '';  
@@ -37,20 +40,23 @@ function updateTimeDisplay() {
         anyTimeLabel.style.display = 'none';
     }
 
-    updateScatterPlot(timeFilter); // ✅ Call updateScatterPlot
+    updateScatterPlot(timeFilter); // ✅ Ensure this is always called
 }
 
+// ✅ Listen for slider input
 timeSlider.addEventListener('input', updateTimeDisplay);
 
+// ✅ Convert Date to minutes since midnight
 function minutesSinceMidnight(date) {
     return date.getHours() * 60 + date.getMinutes();
 }
 
+// ✅ Compute arrivals & departures per station
 function computeStationTraffic(stations, trips) {
-    const departures = d3.rollup(trips, (v) => v.length, (d) => d.start_station_id);
-    const arrivals = d3.rollup(trips, (v) => v.length, (d) => d.end_station_id);
+    const departures = d3.rollup(trips, v => v.length, d => d.start_station_id);
+    const arrivals = d3.rollup(trips, v => v.length, d => d.end_station_id);
 
-    return stations.map((station) => {
+    return stations.map(station => {
         let id = station.short_name;
         return {
             ...station,
@@ -58,17 +64,6 @@ function computeStationTraffic(stations, trips) {
             departures: departures.get(id) ?? 0,  
             totalTraffic: (arrivals.get(id) ?? 0) + (departures.get(id) ?? 0)  
         };
-    });
-}
-
-function filterTripsByTime(trips, timeFilter) {
-    return timeFilter === -1 ? trips : trips.filter(trip => {
-        const startedMinutes = minutesSinceMidnight(trip.started_at);
-        const endedMinutes = minutesSinceMidnight(trip.ended_at);
-        return (
-            Math.abs(startedMinutes - timeFilter) <= 60 ||
-            Math.abs(endedMinutes - timeFilter) <= 60
-        );
     });
 }
 
@@ -142,11 +137,23 @@ map.on('load', () => {
         stations = computeStationTraffic(stations, trips);
 
         function updateScatterPlot(timeFilter) {
-            const filteredTrips = filterTripsByTime(trips, timeFilter);
+            // ✅ Filter trips based on time
+            const filteredTrips = timeFilter === -1 ? trips : trips.filter(trip => {
+                const startedMinutes = minutesSinceMidnight(trip.started_at);
+                const endedMinutes = minutesSinceMidnight(trip.ended_at);
+                return (
+                    Math.abs(startedMinutes - timeFilter) <= 60 ||
+                    Math.abs(endedMinutes - timeFilter) <= 60
+                );
+            });
+
+            // ✅ Recompute station traffic based on filtered trips
             const filteredStations = computeStationTraffic(stations, filteredTrips);
 
-            timeFilter === -1 ? radiusScale.range([0, 25]) : radiusScale.range([3, 50]);
+            // ✅ Adjust circle size scaling dynamically
+            radiusScale.range(timeFilter === -1 ? [0, 25] : [3, 50]);
 
+            // ✅ Update existing circles dynamically
             const circles = svg.selectAll('circle')
                 .data(filteredStations, (d) => d.short_name)
                 .join('circle')
@@ -154,16 +161,19 @@ map.on('load', () => {
                 .attr('r', (d) => radiusScale(d.totalTraffic))
                 .attr('fill', d => d.totalTraffic > 0 ? 'steelblue' : 'gray');
 
-            circles.each(function(d) {
-                d3.select(this).select('title')
-                    .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
-            });
+            // ✅ Update tooltips
+            svg.selectAll('circle')
+                .each(function(d) {
+                    d3.select(this).select('title')
+                        .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+                });
         }
 
-        updateScatterPlot(timeFilter);
+        updateScatterPlot(timeFilter); // ✅ Ensure initial rendering is correct
     }).catch(error => console.error('❌ Error loading data:', error));
 });
 
+// ✅ Convert lon/lat to pixel coordinates
 function getCoords(station) {
     const point = new mapboxgl.LngLat(+station.lon, +station.lat);
     const { x, y } = map.project(point);
