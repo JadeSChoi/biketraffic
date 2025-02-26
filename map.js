@@ -32,6 +32,8 @@ function formatTime(minutes) {
   return date.toLocaleString('en-US', { timeStyle: 'short' });
 }
 
+let updateScatterPlotFn;
+
 // When the slider moves, update the display and scatterplot
 function updateTimeDisplay() {
   timeFilter = Number(timeSlider.value);
@@ -223,6 +225,8 @@ map.on('load', () => {
       
       // Initially call updateScatterPlot() so that the visualization reflects all trips.
       updateScatterPlot(timeFilter);
+      updateScatterPlotFn = updateScatterPlot;
+
       
     });
   }).catch(error => console.error('❌ Error loading data:', error));
